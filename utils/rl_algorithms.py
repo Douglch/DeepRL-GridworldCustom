@@ -4,16 +4,20 @@ import random
 
 class rl_algorithms():
 
-    def __init__(self, env) -> None:
+    def __init__(self, env, size) -> None:
         self.__env__ = env
+        self.__size__ = size
 
-    def _initialize_q_table(self, state_space, action_space):
-        Qtable = np.zeros((state_space.n, action_space.n))
+    def _initialize_q_table(self, action_space):
+        Qtable = {}
+        for x in range(0, self.__size__):
+            for y in range(0, self.__size__):
+                Qtable[(x, y)] = [np.random.uniform(0, 0)
+                                  for i in range(action_space.n)]
         return Qtable
 
     def greedy_policy(self, Qtable, state):
         # Exploitation: take the action with the highest state, action value
-        # action = np.argmax(Qtable[state][:])
         action = np.argmax(Qtable[state])
         return action
 

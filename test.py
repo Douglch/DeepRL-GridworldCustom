@@ -9,13 +9,15 @@ from gym.wrappers import TimeLimit
 from tqdm import tqdm
 
 # Training parameters
+SIZE = 5
 N_TRAINING_EPISODES = 25000   # Total training episodes
 LEARNING_RATE = 0.7           # Learning rate
 
+SHOW_EVERY = 5000
 # Evaluation parameters
 N_EVAL_EPISODES = 100        # Total number of test episodes
 NUM_EPISODES = 100
-MAX_STEPS = 99               # Max steps per episode
+MAX_STEPS = 200              # Max steps per episode
 GAMMA = 0.95                 # Discounting rate
 
 # Exploration parameters
@@ -30,26 +32,23 @@ EVAL_SEED = [16, 54, 165, 177, 191, 191, 120, 80, 149, 178, 48, 38, 6, 125, 174,
 # Each seed has a specific starting state
 
 env = gym.make("gridworldcustom/GridWorldCustom-v0",
-               render_mode="human", size=5)
+               render_mode="human", size=SIZE)
 env = TimeLimit(env, max_episode_steps=MAX_STEPS)
 env.reset()
 
 log = logger(env)
-rl_func = rl_algorithms(env)
+rl_func = rl_algorithms(env, SIZE)
 
-# observation, info = env.reset()
-# print("observation: ", observation['agent'])
-# print("info: ", info)
 log.print_action_space()
 log.print_observation_space()
 
-Qtable_grid = rl_func._initialize_q_table(
-    env.state_space, env.action_space)
+Qtable_grid = rl_func._initialize_q_table(env.action_space)
 # print(Qtable_grid)
-print("Q-table shape: ", Qtable_grid.shape)
+# print("Q-table shape: ", Qtable_grid)
 
 
 def train(n_training_episodes, min_epsilon, max_epsilon, decay_rate, env, max_steps, Qtable):
+    total_rewards_ep = 0
     for episode in tqdm(range(n_training_episodes)):
         # Reduce epsilon (because we need less and less exploration)
         epsilon = min_epsilon + (max_epsilon - min_epsilon) * \
@@ -57,40 +56,47 @@ def train(n_training_episodes, min_epsilon, max_epsilon, decay_rate, env, max_st
         # Reset the environment
         state, info = env.reset()
         # Get the agent's location (will be in array form) e.g. [3, 5]
-        state = state['agent']
+        state = tuple(state['agent'])
         terminated = False
         truncated = False
         # repeat
-        total_rewards_ep = 0
         for step in range(max_steps):
+            if episode % SHOW_EVERY == 0:
+                env.render(mode="human")
             # Choose the action At using epsilon greedy policy
             action = rl_func.epsilon_greedy_policy(Qtable, state, epsilon)
 
             # Take action At and observe Rt+1 and St+1
             # Take the action (a) and observe the outcome state(s') and reward (r)
-            new_state, reward, terminated, truncated, info = env.step(action)
+            new_state, reward, terminated, info = env.step(action)
             # Update Q(s,a):= Q(s,a) + lr [R(s,a) + gamma * max Q(s',a') - Q(s,a)]
-            print("state: ", state, " action: ", action, " reward: ", reward)
+            # print("state: ", state, " action: ", action, " reward: ", reward)
             total_rewards_ep += reward
-            new_state = new_state['agent']
-            print(Qtable[state])
+            new_state = tuple(new_state['agent'])
+            # print("new state:", new_state)
             # Update QTable
             new_q_value = np.max(Qtable[new_state])
             Qtable[state][action] += LEARNING_RATE * \
                 (reward + GAMMA *
                  new_q_value - Qtable[state][action])
+            # for s in state:
+            #     Qtable[s][action] += LEARNING_RATE * \
+            #         (reward + GAMMA *
+            #          new_q_value - Qtable[s][action])
+            #     print(Qtable[s][action])
             # If terminated or truncated finish the episode
             if terminated or truncated:
                 break
-
             # Our next state is the new state
             state = new_state
+        if episode % SHOW_EVERY == 0:
+            print(f"Episode: {episode}, total rewards: {total_rewards_ep}")
     return Qtable
 
 
 Qtable_taxi = train(N_TRAINING_EPISODES, MIN_EPSILON,
                     MAX_EPSILON, DECAY_RATE, env, MAX_STEPS, Qtable_grid)
-Qtable_taxi
+# print(Qtable_taxi)
 
 
 # def evaluate_agent(env, max_steps, n_eval_episodes, Q, seed):

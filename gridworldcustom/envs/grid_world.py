@@ -111,6 +111,9 @@ class GridWorldCustomEnv(gym.Env):
         observation = self._get_obs()
         info = self._get_info()
 
+        # if self.render_mode == "human":
+        #     self._render_frame()
+
         return observation, info
 
     def step(self, action):
@@ -138,12 +141,13 @@ class GridWorldCustomEnv(gym.Env):
         observation = self._get_obs()
         info = self._get_info()
 
+        # if self.render_mode == "human":
+        #     self._render_frame()
+
         return observation, reward, terminated, info
 
-    def render(self):
-        if self.render_mode == "rgb_array":
-            return self._render_frame()
-        elif self.render_mode == "human":
+    def render(self, mode=None):
+        if self.render_mode == "rgb_array" or self.render_mode == "human":
             return self._render_frame()
 
     def _render_frame(self):
