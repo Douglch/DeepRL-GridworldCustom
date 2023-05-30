@@ -5,12 +5,19 @@ import numpy as np
 
 
 class GridWorldCustomEnv(gym.Env):
-    metadata = {"render_modes": ["human", "rgb_array"], "render_fps": 4}
+    metadata = {"render_modes": ["human", "rgb_array"], "render_fps": 24}
 
     def __init__(self, render_mode=None, size=5):
         self.size = size  # The size of the square grid (5 * 5)
         self.window_size = 512  # The size of the PyGame window
-        self.count_states = size * size  # The number of possible states
+        '''
+        The observation is a value representing the agent's current position as
+        current_row * nrows + current_col (where both the row and col start at 0).
+        For example, the goal position in the 4x4 map can be calculated as follows: 3 * 4 + 3 = 15.
+        The number of possible observations is dependent on the size of the map.
+        '''
+        self.state_space = spaces.Discrete(
+            size * size)  # The number of possible grids
 
         # Observations are dictionaries with the agent's and the target's location.
         # Each location is encoded as an element of {0, ..., `size`}^2, i.e. MultiDiscrete([size, size]).
@@ -74,9 +81,9 @@ class GridWorldCustomEnv(gym.Env):
 
     def reset(self, seed=None, options=None):
         # We need the following line to seed self.np_random
-        super().reset(seed=seed)
+        # super().reset(seed=seed)
         # Choose the agent's location uniformly at random
-        self._agent_location = self.np_random.integers(
+        self._agent_location = np.random.randint(
             0, self.size, size=2, dtype=int)
 
         # # # We will sample the target's location randomly until it does not coincide with the agent's location
@@ -88,11 +95,11 @@ class GridWorldCustomEnv(gym.Env):
 
         target_locations = [self._agent_location]
 
-        for i in range(3):
-            target_location = self.np_random.integers(
+        for i in range(3):  # Check if agent and the 3 rewards are not in the same location
+            target_location = np.random.randint(
                 0, self.size, size=2, dtype=int)
             while np.any([np.array_equal(target_location, target_locations[j]) for j in range(i+1)]):
-                target_location = self.np_random.integers(
+                target_location = np.random.randint(
                     0, self.size, size=2, dtype=int)
             target_locations.append(target_location)
 
@@ -103,9 +110,6 @@ class GridWorldCustomEnv(gym.Env):
 
         observation = self._get_obs()
         info = self._get_info()
-
-        if self.render_mode == "human":
-            self._render_frame()
 
         return observation, info
 
@@ -134,13 +138,12 @@ class GridWorldCustomEnv(gym.Env):
         observation = self._get_obs()
         info = self._get_info()
 
-        if self.render_mode == "human":
-            self._render_frame()
-
-        return observation, reward, terminated, False, info
+        return observation, reward, terminated, info
 
     def render(self):
         if self.render_mode == "rgb_array":
+            return self._render_frame()
+        elif self.render_mode == "human":
             return self._render_frame()
 
     def _render_frame(self):
