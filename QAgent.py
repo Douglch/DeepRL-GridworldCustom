@@ -13,7 +13,7 @@ SIZE = 5
 N_TRAINING_EPISODES = 25000   # Total training episodes
 LEARNING_RATE = 0.7           # Learning rate
 
-SHOW_EVERY = 5000
+SHOW_EVERY = 3000
 # Evaluation parameters
 N_EVAL_EPISODES = 100        # Total number of test episodes
 NUM_EPISODES = 100
@@ -33,7 +33,6 @@ EVAL_SEED = [16, 54, 165, 177, 191, 191, 120, 80, 149, 178, 48, 38, 6, 125, 174,
 
 env = gym.make("gridworldcustom/GridWorldCustom-v0",
                render_mode="human", size=SIZE)
-env = TimeLimit(env, max_episode_steps=MAX_STEPS)
 env.reset()
 
 log = logger(env)
@@ -48,7 +47,6 @@ Qtable_grid = rl_func._initialize_q_table(env.action_space)
 
 
 def train(n_training_episodes, min_epsilon, max_epsilon, decay_rate, env, max_steps, Qtable):
-    total_rewards_ep = 0
     for episode in tqdm(range(n_training_episodes)):
         # Reduce epsilon (because we need less and less exploration)
         epsilon = min_epsilon + (max_epsilon - min_epsilon) * \
@@ -60,18 +58,14 @@ def train(n_training_episodes, min_epsilon, max_epsilon, decay_rate, env, max_st
         terminated = False
         truncated = False
         # repeat
-        for step in range(max_steps):
-            if episode % SHOW_EVERY == 0:
-                env.render(mode="human")
+        # for step in range(max_steps):
+        while not terminated:
             # Choose the action At using epsilon greedy policy
             action = rl_func.epsilon_greedy_policy(Qtable, state, epsilon)
-
             # Take action At and observe Rt+1 and St+1
             # Take the action (a) and observe the outcome state(s') and reward (r)
             new_state, reward, terminated, info = env.step(action)
             # Update Q(s,a):= Q(s,a) + lr [R(s,a) + gamma * max Q(s',a') - Q(s,a)]
-            # print("state: ", state, " action: ", action, " reward: ", reward)
-            total_rewards_ep += reward
             new_state = tuple(new_state['agent'])
             # print("new state:", new_state)
             # Update QTable
@@ -79,24 +73,20 @@ def train(n_training_episodes, min_epsilon, max_epsilon, decay_rate, env, max_st
             Qtable[state][action] += LEARNING_RATE * \
                 (reward + GAMMA *
                  new_q_value - Qtable[state][action])
-            # for s in state:
-            #     Qtable[s][action] += LEARNING_RATE * \
-            #         (reward + GAMMA *
-            #          new_q_value - Qtable[s][action])
-            #     print(Qtable[s][action])
             # If terminated or truncated finish the episode
+            if episode % SHOW_EVERY == 0:
+                env.render(mode="human")
             if terminated or truncated:
                 break
             # Our next state is the new state
             state = new_state
         if episode % SHOW_EVERY == 0:
-            print(f"Episode: {episode}, total rewards: {total_rewards_ep}")
+            pass
     return Qtable
 
 
 Qtable_taxi = train(N_TRAINING_EPISODES, MIN_EPSILON,
                     MAX_EPSILON, DECAY_RATE, env, MAX_STEPS, Qtable_grid)
-# print(Qtable_taxi)
 
 
 # def evaluate_agent(env, max_steps, n_eval_episodes, Q, seed):

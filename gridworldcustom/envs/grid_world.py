@@ -86,13 +86,6 @@ class GridWorldCustomEnv(gym.Env):
         self._agent_location = np.random.randint(
             0, self.size, size=2, dtype=int)
 
-        # # # We will sample the target's location randomly until it does not coincide with the agent's location
-        # self._target_location_1 = self._agent_location
-        # while np.array_equal(self._target_location_1, self._agent_location):
-        #     self._target_location_1 = self.np_random.integers(
-        #         0, self.size, size=2, dtype=int
-        #     )
-
         target_locations = [self._agent_location]
 
         for i in range(3):  # Check if agent and the 3 rewards are not in the same location
@@ -110,10 +103,10 @@ class GridWorldCustomEnv(gym.Env):
 
         observation = self._get_obs()
         info = self._get_info()
-
+        print(isinstance(
+            observation, dict), "<-- observation is a dictionary")
         # if self.render_mode == "human":
         #     self._render_frame()
-
         return observation, info
 
     def step(self, action):
@@ -125,7 +118,7 @@ class GridWorldCustomEnv(gym.Env):
             self._agent_location + direction, 0, self.size - 1
         )
 
-        # # Check if the agent has visited the next target location in the required order
+        # # Check if the agent has visited the next target location
         if np.array_equal(self._agent_location, self._target_location_1):
             self._targets_visited[0] = True
         elif np.array_equal(self._agent_location, self._target_location_2):
