@@ -1,18 +1,19 @@
 import gym
 from gym import spaces
-import pygame
 import numpy as np
-from helper import Helper
+import pygame
+
+from .helper import Helper
 
 
 class GridWorldCustomEnv(gym.Env):
     metadata = {"render_modes": ["human", "rgb_array"], "render_fps": 24}
     Helper = Helper()
 
-    def __init__(self, render_mode=None, size=5, agents=1):
+    def __init__(self, render_mode=None, size=5, targets=1):
         self.size = size  # The size of the square grid (5 * 5)
         self.window_size = 512  # The size of the PyGame window
-        self.agents = agents  # The number of agents in the environment
+        self.targets = targets  # The number of agents in the environment
         '''
         The observation is a value representing the agent's current position as
         current_row * nrows + current_col (where both the row and col start at 0).
@@ -24,7 +25,7 @@ class GridWorldCustomEnv(gym.Env):
 
         # Observations are dictionaries with the agent's and the target's location.
         # Each location is encoded as an element of {0, ..., `size`}^2, i.e. MultiDiscrete([size, size]).
-        self.observation_space = Helper.create_obs(size, agents)
+        self.observation_space = Helper.create_obs(size, targets)
         # spaces.Dict(
         #     {
         #         "agent": spaces.Box(0, size - 1, shape=(2,), dtype=int),
@@ -33,7 +34,6 @@ class GridWorldCustomEnv(gym.Env):
         #         "target_3": spaces.Box(0, size - 1, shape=(2,), dtype=int),
         #     }
         # )
-
         # We have 4 actions, corresponding to "right", "up", "left", "down", "right"
         self.action_space = spaces.Discrete(4)
 
@@ -48,6 +48,8 @@ class GridWorldCustomEnv(gym.Env):
             2: np.array([-1, 0]),  # left
             3: np.array([0, -1]),  # down
         }
+
+        self._target_colors = Helper.predefined_rgb()
 
         assert render_mode is None or render_mode in self.metadata["render_modes"]
         self.render_mode = render_mode
@@ -64,7 +66,8 @@ class GridWorldCustomEnv(gym.Env):
 
     def _get_obs(self):
         obs = {"agent": self._agent_location}
-        # TODO: You can also append the target locations to the observation
+        for i in range(self.targets):
+            obs[f"target_{i + 1}"] = self._target_locations[i]
         return obs
 
     def _get_info(self):
@@ -89,18 +92,20 @@ class GridWorldCustomEnv(gym.Env):
         self._agent_location = np.random.randint(
             0, self.size, size=2, dtype=int)
 
-        self.entity_locations = [self._agent_location]
-
+        # Note that the first index of entity location is the agent's location
+        self._entity_locations = [self._agent_location]
+        self. _target_locations = []
         # Check if agent and the n rewards are not in the same location
-        for i in range(self.agents):
+        for i in range(self.targets):
             target_location = np.random.randint(
                 0, self.size, size=2, dtype=int)
-            while np.any([np.array_equal(target_location, self.entity_locations[j]) for j in range(i+1)]):
+            while np.any([np.array_equal(target_location, self._entity_locations[j]) for j in range(i+1)]):
                 target_location = np.random.randint(
                     0, self.size, size=2, dtype=int)
-            self.entity_locations.append(target_location)
+            self._entity_locations.append(target_location)
+            self._target_locations.append(target_location)
 
-        self._targets_visited = np.array([False] * self.agents)
+        self._targets_visited = np.array([False] * self.targets)
 
         observation = self._get_obs()
         # info = self._get_info()
@@ -121,16 +126,12 @@ class GridWorldCustomEnv(gym.Env):
         )
 
         # # Check if the agent has visited the next target location
-        if np.array_equal(self._agent_location, self._target_location_1):
-            self._targets_visited[0] = True
-        elif np.array_equal(self._agent_location, self._target_location_2):
-            self._targets_visited[1] = True
-        elif np.array_equal(self._agent_location, self._target_location_3):
-            self._targets_visited[2] = True
+        for i in range(self.targets):
+            if np.array_equal(self._agent_location, self._target_locations[i]):
+                self._targets_visited[i] = True
 
-        # An episode is done iff the agent has reached the target
+        # An episode is done iff the agent has reached the target. We convert to bool to pass the env_checker test.
         terminated = bool(np.all(self._targets_visited))
-        # terminated = np.array_equal(self._agent_location, self._target_location_1)
 
         reward = 1 if terminated else 0  # Binary sparse rewards
         observation = self._get_obs()
@@ -160,36 +161,20 @@ class GridWorldCustomEnv(gym.Env):
             self.window_size / self.size
         )  # The size of a single grid square in pixels
 
-        # First we draw the target 1
-        pygame.draw.rect(
-            canvas,
-            (155, 0, 0),
-            pygame.Rect(
-                pix_square_size * self._target_location_1,
-                (pix_square_size, pix_square_size),
-            ),
-        )
-        pygame.draw.rect(
-            canvas,
-            (0, 155, 0),
-            pygame.Rect(
-                pix_square_size * self._target_location_2,
-                (pix_square_size, pix_square_size),
-            ),
-        )
-        pygame.draw.rect(
-            canvas,
-            (0, 0, 155),
-            pygame.Rect(
-                pix_square_size * self._target_location_3,
-                (pix_square_size, pix_square_size),
-            ),
-        )
-
-        # Now we draw the agent
+        # First we draw the targets
+        for i in range(self.targets):
+            pygame.draw.rect(
+                canvas,
+                self._target_colors[i],
+                pygame.Rect(
+                    pix_square_size * self._target_locations[i],
+                    (pix_square_size, pix_square_size),
+                ),
+            )
+        # Now we draw the agent, where the agent will always be red
         pygame.draw.circle(
             canvas,
-            (0, 0, 255),
+            (255, 0, 0),
             (self._agent_location + 0.5) * pix_square_size,
             pix_square_size / 3,
         )

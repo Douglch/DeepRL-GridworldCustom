@@ -8,11 +8,12 @@ import gridworldcustom
 SIZE = 5
 
 env = gym.make("gridworldcustom/GridWorldCustom-v0",
-               render_mode="human", size=SIZE)
+               render_mode="human", size=SIZE, targets=3)
 # It will check your custom environment and output additional warnings if needed
+env.reset()
 check_env(env)
 
-episodes = 1
+episodes = 10
 
 for episodes in range(episodes):
     terminated = False

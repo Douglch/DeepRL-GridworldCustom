@@ -9,7 +9,8 @@ from gym.wrappers import TimeLimit
 from tqdm import tqdm
 
 # Training parameters
-SIZE = 5
+SIZE = 10
+TARGETS = 5
 N_TRAINING_EPISODES = 25000   # Total training episodes
 LEARNING_RATE = 0.7           # Learning rate
 
@@ -32,7 +33,7 @@ EVAL_SEED = [16, 54, 165, 177, 191, 191, 120, 80, 149, 178, 48, 38, 6, 125, 174,
 # Each seed has a specific starting state
 
 env = gym.make("gridworldcustom/GridWorldCustom-v0",
-               render_mode="human", size=SIZE)
+               render_mode="human", size=SIZE, targets=TARGETS)
 env.reset()
 
 log = logger(env)
@@ -52,7 +53,7 @@ def train(n_training_episodes, min_epsilon, max_epsilon, decay_rate, env, max_st
         epsilon = min_epsilon + (max_epsilon - min_epsilon) * \
             np.exp(-decay_rate*episode)
         # Reset the environment
-        state, info = env.reset()
+        state = env.reset()
         # Get the agent's location (will be in array form) e.g. [3, 5]
         state = tuple(state['agent'])
         terminated = False
