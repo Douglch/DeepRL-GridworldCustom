@@ -5,10 +5,10 @@ from gym.utils.env_checker import check_env
 
 import gridworldcustom
 
-SIZE = 5
+SIZE = 15
 
 env = gym.make("gridworldcustom/GridWorldCustom-v0",
-               render_mode="human", size=SIZE, targets=3)
+               render_mode="human", size=SIZE, targets=5)
 # It will check your custom environment and output additional warnings if needed
 env.reset()
 check_env(env)

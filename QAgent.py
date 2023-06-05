@@ -14,7 +14,7 @@ TARGETS = 5
 N_TRAINING_EPISODES = 25000   # Total training episodes
 LEARNING_RATE = 0.7           # Learning rate
 
-SHOW_EVERY = 3000
+SHOW_EVERY = 500
 # Evaluation parameters
 N_EVAL_EPISODES = 100        # Total number of test episodes
 NUM_EPISODES = 100
@@ -60,7 +60,7 @@ def train(n_training_episodes, min_epsilon, max_epsilon, decay_rate, env, max_st
         # for step in range(max_steps):
         while not terminated:
             # Choose the action At using epsilon greedy policy
-            action = rl_func.epsilon_greedy_policy(Qtable, state, epsilon)
+            action = RLFunc.epsilon_greedy_policy(Qtable, state, epsilon)
             # Take action At and observe Rt+1 and St+1
             # Take the action (a) and observe the outcome state(s') and reward (r)
             new_state, reward, terminated, info = env.step(action)

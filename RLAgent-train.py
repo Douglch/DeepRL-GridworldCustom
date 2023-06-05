@@ -3,7 +3,6 @@ import gym
 from stable_baselines3 import DQN, PPO
 
 import os
-import time
 import gridworldcustom
 from utils.logger import logger
 

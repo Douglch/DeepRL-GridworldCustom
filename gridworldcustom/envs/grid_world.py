@@ -113,7 +113,8 @@ class GridWorldCustomEnv(gym.Env):
 
     def step(self, action):
         # Map the action (element of {0,1,2,3}) to the direction we walk in
-        direction = self._action_to_direction[action]
+        # TODO: Take note of the type casting here -> may potentially hide errors -> maybe type cast at the main class itself?
+        direction = self._action_to_direction[int(action)]
         # We use `np.clip` to make sure we don't leave the grid
         # self.size is the size of the map
         self._agent_location = np.clip(
@@ -157,7 +158,7 @@ class GridWorldCustomEnv(gym.Env):
         for i in range(self.targets):
             pygame.draw.rect(
                 canvas,
-                self._target_colors[i],
+                self._target_colors[i+70],
                 pygame.Rect(
                     pix_square_size * self._target_locations[i],
                     (pix_square_size, pix_square_size),
