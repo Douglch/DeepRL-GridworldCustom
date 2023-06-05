@@ -1,3 +1,4 @@
+# TODO: Needs to fix model for learning
 import gym
 from stable_baselines3 import DQN, PPO
 
@@ -10,7 +11,7 @@ from utils.logger import logger
 TIMESTEPS = 10000
 SIZE = 5
 
-model_fn = DQN
+model_fn = PPO
 models_dir = f"models/{model_fn.__name__}"
 log_dir = "logs"
 
@@ -32,6 +33,5 @@ for i in range(1, 10):
                 tb_log_name=f"{model_fn.__name__}")
     # Save the model every 1000 timesteps
     model.save(f"{models_dir}/{TIMESTEPS*i}")
-
 
 env.close()

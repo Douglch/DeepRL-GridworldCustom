@@ -7,9 +7,10 @@ import numpy as np
 class GridWorldCustomEnv(gym.Env):
     metadata = {"render_modes": ["human", "rgb_array"], "render_fps": 24}
 
-    def __init__(self, render_mode=None, size=5):
+    def __init__(self, render_mode=None, size=5, agents=1):
         self.size = size  # The size of the square grid (5 * 5)
         self.window_size = 512  # The size of the PyGame window
+        self.agents = agents  # The number of agents in the environment
         '''
         The observation is a value representing the agent's current position as
         current_row * nrows + current_col (where both the row and col start at 0).
@@ -103,8 +104,8 @@ class GridWorldCustomEnv(gym.Env):
 
         observation = self._get_obs()
         info = self._get_info()
-        print(isinstance(
-            observation, dict), "<-- observation is a dictionary")
+        # print(isinstance(
+        #     observation, dict), "<-- observation is a dictionary")
         # if self.render_mode == "human":
         #     self._render_frame()
         return observation, info
