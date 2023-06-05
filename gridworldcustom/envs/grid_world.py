@@ -2,10 +2,12 @@ import gym
 from gym import spaces
 import pygame
 import numpy as np
+from helper import Helper
 
 
 class GridWorldCustomEnv(gym.Env):
     metadata = {"render_modes": ["human", "rgb_array"], "render_fps": 24}
+    Helper = Helper()
 
     def __init__(self, render_mode=None, size=5, agents=1):
         self.size = size  # The size of the square grid (5 * 5)
@@ -22,14 +24,15 @@ class GridWorldCustomEnv(gym.Env):
 
         # Observations are dictionaries with the agent's and the target's location.
         # Each location is encoded as an element of {0, ..., `size`}^2, i.e. MultiDiscrete([size, size]).
-        self.observation_space = spaces.Dict(
-            {
-                "agent": spaces.Box(0, size - 1, shape=(2,), dtype=int),
-                "target_1": spaces.Box(0, size - 1, shape=(2,), dtype=int),
-                "target_2": spaces.Box(0, size - 1, shape=(2,), dtype=int),
-                "target_3": spaces.Box(0, size - 1, shape=(2,), dtype=int),
-            }
-        )
+        self.observation_space = Helper.create_obs(size, agents)
+        # spaces.Dict(
+        #     {
+        #         "agent": spaces.Box(0, size - 1, shape=(2,), dtype=int),
+        #         "target_1": spaces.Box(0, size - 1, shape=(2,), dtype=int),
+        #         "target_2": spaces.Box(0, size - 1, shape=(2,), dtype=int),
+        #         "target_3": spaces.Box(0, size - 1, shape=(2,), dtype=int),
+        #     }
+        # )
 
         # We have 4 actions, corresponding to "right", "up", "left", "down", "right"
         self.action_space = spaces.Discrete(4)
@@ -60,23 +63,22 @@ class GridWorldCustomEnv(gym.Env):
         self.clock = None
 
     def _get_obs(self):
-        return {"agent": self._agent_location,
-                "target_1": self._target_location_1,
-                "target_2": self._target_location_2,
-                "target_3": self._target_location_3,
-                }
+        obs = {"agent": self._agent_location}
+        # TODO: You can also append the target locations to the observation
+        return obs
 
     def _get_info(self):
+        # TODO: should return the info on the nearest targets
         info = {
-            "distancefromtarget 1": np.linalg.norm(
-                self._agent_location - self._target_location_1, ord=1
-            ),
-            "distance from target 2": np.linalg.norm(
-                self._agent_location - self._target_location_2, ord=1
-            ),
-            "distance from target 3": np.linalg.norm(
-                self._agent_location - self._target_location_3, ord=1
-            ),
+            # "distancefromtarget 1": np.linalg.norm(
+            #     self._agent_location - self._target_location_1, ord=1
+            # ),
+            # "distance from target 2": np.linalg.norm(
+            #     self._agent_location - self._target_location_2, ord=1
+            # ),
+            # "distance from target 3": np.linalg.norm(
+            #     self._agent_location - self._target_location_3, ord=1
+            # ),
         }
         return info
 
@@ -87,20 +89,18 @@ class GridWorldCustomEnv(gym.Env):
         self._agent_location = np.random.randint(
             0, self.size, size=2, dtype=int)
 
-        target_locations = [self._agent_location]
+        self.entity_locations = [self._agent_location]
 
-        for i in range(3):  # Check if agent and the 3 rewards are not in the same location
+        # Check if agent and the n rewards are not in the same location
+        for i in range(self.agents):
             target_location = np.random.randint(
                 0, self.size, size=2, dtype=int)
-            while np.any([np.array_equal(target_location, target_locations[j]) for j in range(i+1)]):
+            while np.any([np.array_equal(target_location, self.entity_locations[j]) for j in range(i+1)]):
                 target_location = np.random.randint(
                     0, self.size, size=2, dtype=int)
-            target_locations.append(target_location)
+            self.entity_locations.append(target_location)
 
-        self._target_location_1 = target_locations[1]
-        self._target_location_2 = target_locations[2]
-        self._target_location_3 = target_locations[3]
-        self._targets_visited = np.array([False, False, False])
+        self._targets_visited = np.array([False] * self.agents)
 
         observation = self._get_obs()
         # info = self._get_info()
