@@ -103,12 +103,13 @@ class GridWorldCustomEnv(gym.Env):
         self._targets_visited = np.array([False, False, False])
 
         observation = self._get_obs()
-        info = self._get_info()
+        # info = self._get_info()
         # print(isinstance(
         #     observation, dict), "<-- observation is a dictionary")
+        # print("observation:", observation)
         # if self.render_mode == "human":
         #     self._render_frame()
-        return observation, info
+        return observation
 
     def step(self, action):
         # Map the action (element of {0,1,2,3}) to the direction we walk in
@@ -128,7 +129,7 @@ class GridWorldCustomEnv(gym.Env):
             self._targets_visited[2] = True
 
         # An episode is done iff the agent has reached the target
-        terminated = np.all(self._targets_visited)
+        terminated = bool(np.all(self._targets_visited))
         # terminated = np.array_equal(self._agent_location, self._target_location_1)
 
         reward = 1 if terminated else 0  # Binary sparse rewards
