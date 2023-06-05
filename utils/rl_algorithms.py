@@ -2,7 +2,7 @@ import numpy as np
 import random
 
 
-class rl_algorithms():
+class RLAlgorithms():
 
     def __init__(self, env, size) -> None:
         self.__env__ = env

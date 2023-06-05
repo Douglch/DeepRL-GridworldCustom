@@ -1,6 +1,6 @@
 import gridworldcustom
 
-from utils.rl_algorithms import rl_algorithms
+from utils.rl_algorithms import RLAlgorithms
 from utils.logger import logger
 
 import gym
@@ -37,14 +37,12 @@ env = gym.make("gridworldcustom/GridWorldCustom-v0",
 env.reset()
 
 log = logger(env)
-rl_func = rl_algorithms(env, SIZE)
+RLFunc = RLAlgorithms(env, SIZE)
 
 log.print_action_space()
 log.print_observation_space()
 
-Qtable_grid = rl_func._initialize_q_table(env.action_space)
-# print(Qtable_grid)
-# print("Q-table shape: ", Qtable_grid)
+Qtable_grid = RLFunc._initialize_q_table(env.action_space)
 
 
 def train(n_training_episodes, min_epsilon, max_epsilon, decay_rate, env, max_steps, Qtable):
@@ -81,8 +79,6 @@ def train(n_training_episodes, min_epsilon, max_epsilon, decay_rate, env, max_st
                 break
             # Our next state is the new state
             state = new_state
-        if episode % SHOW_EVERY == 0:
-            pass
     return Qtable
 
 
