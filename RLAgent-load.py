@@ -5,6 +5,8 @@ import gridworldcustom
 from utils.logger import logger
 
 SIZE = 10
+
+# Change the timestep to the model you want to load
 TIMESTEPS = 70000
 
 # Edit the model_fn to the algorithm you want to use
