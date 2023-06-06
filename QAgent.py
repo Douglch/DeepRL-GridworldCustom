@@ -10,11 +10,11 @@ from tqdm import tqdm
 
 # Training parameters
 SIZE = 10
-TARGETS = 5
+TARGETS = 1
 N_TRAINING_EPISODES = 25000   # Total training episodes
 LEARNING_RATE = 0.7           # Learning rate
 
-SHOW_EVERY = 500
+SHOW_EVERY = 3000
 # Evaluation parameters
 N_EVAL_EPISODES = 100        # Total number of test episodes
 NUM_EPISODES = 100
@@ -56,6 +56,8 @@ def train(n_training_episodes, min_epsilon, max_epsilon, decay_rate, env, max_st
         state = tuple(state['agent'])
         terminated = False
         truncated = False
+        steps = 0
+        reward_ep = 0
         # repeat
         # for step in range(max_steps):
         while not terminated:
@@ -74,6 +76,10 @@ def train(n_training_episodes, min_epsilon, max_epsilon, decay_rate, env, max_st
                  new_q_value - Qtable[state][action])
             # If terminated or truncated finish the episode
             if episode % SHOW_EVERY == 0:
+                reward_ep += reward
+                steps += 1
+                print("reward_ep:", reward_ep)
+                print("steps:", steps)
                 env.render(mode="human")
             if terminated or truncated:
                 break

@@ -5,7 +5,7 @@ from gym.utils.env_checker import check_env
 
 import gridworldcustom
 
-SIZE = 15
+SIZE = 20
 
 env = gym.make("gridworldcustom/GridWorldCustom-v0",
                render_mode="human", size=SIZE, targets=5)

@@ -7,7 +7,7 @@ from .helper import Helper
 
 
 class GridWorldCustomEnv(gym.Env):
-    metadata = {"render_modes": ["human", "rgb_array"], "render_fps": 24}
+    metadata = {"render_modes": ["human", "rgb_array"], "render_fps": 10}
     Helper = Helper()
 
     def __init__(self, render_mode=None, size=5, targets=1):
@@ -64,17 +64,10 @@ class GridWorldCustomEnv(gym.Env):
         return obs
 
     def _get_info(self):
-        # TODO: should return the info on the nearest targets
+        # Return the info on the nearest targets
         info = {
-            # "distancefromtarget 1": np.linalg.norm(
-            #     self._agent_location - self._target_location_1, ord=1
-            # ),
-            # "distance from target 2": np.linalg.norm(
-            #     self._agent_location - self._target_location_2, ord=1
-            # ),
-            # "distance from target 3": np.linalg.norm(
-            #     self._agent_location - self._target_location_3, ord=1
-            # ),
+            "shortest distance": self._shortest_distance,
+            "closest target": self._closest_point
         }
         return info
 
@@ -99,33 +92,68 @@ class GridWorldCustomEnv(gym.Env):
             self._target_locations.append(target_location)
 
         self._targets_visited = np.array([False] * self.targets)
+        distances = np.linalg.norm(
+            self._agent_location - self._target_locations, ord=1, axis=1)
+        shortest_distance_index = np.argmin(distances)
+        self._shortest_distance = distances[shortest_distance_index]
+        self._closest_point = self._target_locations[shortest_distance_index]
         self._reward = 0
         observation = self._get_obs()
         # info = self._get_info()
         return observation
 
     def step(self, action):
+        # Store current agent state
+        current_shortest_distance = self._shortest_distance.copy()
+
         # Map the action (element of {0,1,2,3}) to the direction we walk in
         # TODO: Take note of the type casting here -> may potentially hide errors -> maybe type cast at the main class itself?
         direction = self._action_to_direction[int(action)]
-        # We use `np.clip` to make sure we don't leave the grid
+        """
+        Update self._agent_location with the NEW state
+        We use `np.clip` to make sure we don't leave the grid.
+        """
         self._agent_location = np.clip(
             self._agent_location + direction, 0, self.size - 1
         )
 
-        # # Check if the agent has visited the next target location
+        # Check if the agent has visited the next target location
         for i in range(self.targets):
             if np.array_equal(self._agent_location, self._target_locations[i]):
                 self._targets_visited[i] = True
 
+        # self._reward = 1 if terminated else 0  # Binary sparse rewards
+        # Update the new shortest distance
+        distances = np.linalg.norm(
+            self._agent_location - self._target_locations, ord=1, axis=1)
+        shortest_distance_index = np.argmin(distances)
+        self._shortest_distance = distances[shortest_distance_index]
+        self._closest_point = self._target_locations[shortest_distance_index]
+
+        observation = self._get_obs()
+        info = self._get_info()
         # An episode is done iff the agent has reached the target. We convert to bool to pass the env_checker test.
         terminated = bool(np.all(self._targets_visited))
 
-        reward = 1 if terminated else 0  # Binary sparse rewards
-        observation = self._get_obs()
-        info = self._get_info()
+        # TEST FOR 1 TARGET ONLY -> REMOVE LATER
+        if terminated:
+            """
+            Should change accordingly to the size of the map.
+            Think about what should be the expected number of steps to take to terminate the episode.
+            """
+            self._reward = self.size**2
+        elif self._shortest_distance < current_shortest_distance:
+            self._reward = 1  # Reward for moving towards the target
+        elif self._shortest_distance == current_shortest_distance:
+            # No reward for staying in the same place
+            """
+            This condition is for disallowing the drone from trying to move out of the boundary to get more reward.
+            """
+            self._reward = 0
+        else:
+            self._reward = -1  # Penalize for not moving towards the target
 
-        return observation, reward, terminated, info
+        return observation, self._reward, terminated, info
 
     def render(self, mode=None):
         if self.render_mode == "rgb_array" or self.render_mode == "human":

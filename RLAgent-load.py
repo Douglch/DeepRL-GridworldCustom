@@ -4,8 +4,8 @@ from stable_baselines3 import A2C, PPO
 import gridworldcustom
 from utils.logger import logger
 
-SIZE = 5
-TIMESTEPS = 90000
+SIZE = 10
+TIMESTEPS = 70000
 
 # Edit the model_fn to the algorithm you want to use
 model_fn = PPO
@@ -22,14 +22,29 @@ model_path = f"{models_dir}/{TIMESTEPS}"
 model = model_fn.load(model_path, env=env, print_system_info=True)
 
 
-episodes = 1000
+episodes = 50
+total_rewards = []
+total_steps = []
+distances = {}
 for episode in range(1, episodes + 1):
     obs = env.reset()
     terminated = False
-
+    reward_ep = 0
+    steps = 0
+    distances[f"episode_{episode}"] = []
     while not terminated:
         action, _states = model.predict(obs)
         obs, reward, terminated, info = env.step(action)
+        distances[f"episode_{episode}"].append(info["shortest distance"])
+        print("reward:", reward)
+        reward_ep += reward
+        steps += 1
         env.render()
+    total_rewards.append(reward_ep)
+    total_steps.append(steps)
+    print(f"Episode: {episode}, Reward_EP: {reward_ep}, Steps: {steps}")
 
+print("distances:", distances)
+print("total_rewards:", total_rewards)
+print("total_steps:", total_steps)
 env.close()

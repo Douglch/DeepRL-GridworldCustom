@@ -1,4 +1,3 @@
-# TODO: Needs to fix model for learning
 import gym
 from stable_baselines3 import DQN, PPO
 
@@ -8,7 +7,7 @@ from utils.logger import logger
 
 # Training parameters
 TIMESTEPS = 10000
-SIZE = 5
+SIZE = 10
 
 model_fn = PPO
 models_dir = f"models/{model_fn.__name__}"
@@ -27,10 +26,10 @@ env.reset()
 
 model = model_fn("MultiInputPolicy", env, verbose=1, tensorboard_log=log_dir)
 
-for i in range(1, 10):
+for i in range(0, 10):
     model.learn(total_timesteps=TIMESTEPS, reset_num_timesteps=False,
                 tb_log_name=f"{model_fn.__name__}")
-    # Save the model every 1000 timesteps
+    # Save the model every 100 timesteps
     model.save(f"{models_dir}/{TIMESTEPS*i}")
 
 env.close()
