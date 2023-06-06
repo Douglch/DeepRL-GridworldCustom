@@ -23,8 +23,8 @@ GAMMA = 0.95                 # Discounting rate
 
 # Exploration parameters
 MAX_EPSILON = 1.0             # Exploration probability at start
-MIN_EPSILON = 0.05           # Minimum exploration probability
-DECAY_RATE = 0.005            # Exponential decay rate for exploration prob
+MIN_EPSILON = 0.2           # Minimum exploration probability
+DECAY_RATE = 0.00            # Exponential decay rate for exploration prob
 
 # DO NOT MODIFY EVAL_SEED
 EVAL_SEED = [16, 54, 165, 177, 191, 191, 120, 80, 149, 178, 48, 38, 6, 125, 174, 73, 50, 172, 100, 148, 146, 6, 25, 40, 68, 148, 49, 167, 9, 97, 164, 176, 61, 7, 54, 55,

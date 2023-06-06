@@ -26,14 +26,7 @@ class GridWorldCustomEnv(gym.Env):
         # Observations are dictionaries with the agent's and the target's location.
         # Each location is encoded as an element of {0, ..., `size`}^2, i.e. MultiDiscrete([size, size]).
         self.observation_space = Helper.create_obs(size, targets)
-        # spaces.Dict(
-        #     {
-        #         "agent": spaces.Box(0, size - 1, shape=(2,), dtype=int),
-        #         "target_1": spaces.Box(0, size - 1, shape=(2,), dtype=int),
-        #         "target_2": spaces.Box(0, size - 1, shape=(2,), dtype=int),
-        #         "target_3": spaces.Box(0, size - 1, shape=(2,), dtype=int),
-        #     }
-        # )
+
         # We have 4 actions, corresponding to "right", "up", "left", "down", "right"
         self.action_space = spaces.Discrete(4)
 
@@ -48,7 +41,7 @@ class GridWorldCustomEnv(gym.Env):
             2: np.array([-1, 0]),  # left
             3: np.array([0, -1]),  # down
         }
-
+        # Color of the goals
         self._target_colors = Helper.predefined_rgb()
 
         assert render_mode is None or render_mode in self.metadata["render_modes"]
@@ -94,7 +87,7 @@ class GridWorldCustomEnv(gym.Env):
 
         # Note that the first index of entity location is the agent's location
         self._entity_locations = [self._agent_location]
-        self. _target_locations = []
+        self._target_locations = []
         # Check if agent and the n rewards are not in the same location
         for i in range(self.targets):
             target_location = np.random.randint(
@@ -106,7 +99,7 @@ class GridWorldCustomEnv(gym.Env):
             self._target_locations.append(target_location)
 
         self._targets_visited = np.array([False] * self.targets)
-
+        self._reward = 0
         observation = self._get_obs()
         # info = self._get_info()
         return observation
@@ -116,7 +109,6 @@ class GridWorldCustomEnv(gym.Env):
         # TODO: Take note of the type casting here -> may potentially hide errors -> maybe type cast at the main class itself?
         direction = self._action_to_direction[int(action)]
         # We use `np.clip` to make sure we don't leave the grid
-        # self.size is the size of the map
         self._agent_location = np.clip(
             self._agent_location + direction, 0, self.size - 1
         )

@@ -14,7 +14,6 @@ env = gym.make("gridworldcustom/GridWorldCustom-v0",
                render_mode="human", size=SIZE)
 env.reset()
 log = logger(env)
-# log.print_obs_action_space()
 
 models_dir = f"models/{model_fn.__name__}"
 # Edit the number (timestep) to the model you want to load
