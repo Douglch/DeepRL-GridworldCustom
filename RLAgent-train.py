@@ -1,13 +1,14 @@
 import gym
-from stable_baselines3 import DQN, PPO
+from stable_baselines3 import PPO
 
 import os
 import gridworldcustom
 from utils.logger import logger
 
 # Training parameters
-TIMESTEPS = 10000
-SIZE = 10
+TIMESTEPS = 10_000
+SIZE = 5
+TARGETS = 3
 
 model_fn = PPO
 models_dir = f"models/{model_fn.__name__}"
@@ -19,14 +20,14 @@ if not os.path.exists(log_dir):
     os.makedirs(log_dir)
 
 env = gym.make("gridworldcustom/GridWorldCustom-v0",
-               render_mode="human", size=SIZE)
+               render_mode="human", size=SIZE, targets=TARGETS)
 env.reset()
 # log = logger(env)
 # log.print_obs_action_space()
 
 model = model_fn("MultiInputPolicy", env, verbose=1, tensorboard_log=log_dir)
 
-for i in range(0, 10):
+for i in range(1, 11):
     model.learn(total_timesteps=TIMESTEPS, reset_num_timesteps=False,
                 tb_log_name=f"{model_fn.__name__}")
     # Save the model every 100 timesteps

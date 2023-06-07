@@ -9,9 +9,9 @@ from gym.wrappers import TimeLimit
 from tqdm import tqdm
 
 # Training parameters
-SIZE = 10
-TARGETS = 1
-N_TRAINING_EPISODES = 25000   # Total training episodes
+SIZE = 5
+TARGETS = 3
+N_TRAINING_EPISODES = 25_000   # Total training episodes
 LEARNING_RATE = 0.7           # Learning rate
 
 SHOW_EVERY = 3000

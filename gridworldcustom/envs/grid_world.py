@@ -7,13 +7,13 @@ from .helper import Helper
 
 
 class GridWorldCustomEnv(gym.Env):
-    metadata = {"render_modes": ["human", "rgb_array"], "render_fps": 10}
+    metadata = {"render_modes": ["human", "rgb_array"], "render_fps": 7}
     Helper = Helper()
 
     def __init__(self, render_mode=None, size=5, targets=1):
         self.size = size  # The size of the square grid (5 * 5) by default
         self.window_size = 512  # The size of the PyGame window
-        self.targets = targets  # The number of targets in the environment
+        self.targets = targets  # The number of targets to be collected
         '''
         The observation is a value representing the agent's current position as
         current_row * nrows + current_col (where both the row and col start at 0).
@@ -41,8 +41,6 @@ class GridWorldCustomEnv(gym.Env):
             2: np.array([-1, 0]),  # left
             3: np.array([0, -1]),  # down
         }
-        # Color of the goals
-        self._target_colors = Helper.predefined_rgb()
 
         assert render_mode is None or render_mode in self.metadata["render_modes"]
         self.render_mode = render_mode
@@ -57,10 +55,14 @@ class GridWorldCustomEnv(gym.Env):
         self.window = None
         self.clock = None
 
+        """ Contains the state of all targets and the agent.
+        Returns: A dictonary containing the 2D coords of the agent and target locations after the action is taken.
+        """
+
     def _get_obs(self):
         obs = {"agent": self._agent_location}
-        for i in range(self.targets):
-            obs[f"target_{i + 1}"] = self._target_locations[i]
+        for i in range(1, self.targets + 1):
+            obs[f"target_{i}"] = self._entity_locations[i]
         return obs
 
     def _get_info(self):
@@ -72,6 +74,11 @@ class GridWorldCustomEnv(gym.Env):
         return info
 
     def reset(self, seed=None, options=None):
+        # Reset the number of targets
+
+        # Reset the color of the targets
+        self._color_seed = 50
+        self._target_colors = Helper.predefined_rgb()
         # We need the following line to seed self.np_random
         # super().reset(seed=seed)
         # Choose the agent's location uniformly at random
@@ -92,9 +99,12 @@ class GridWorldCustomEnv(gym.Env):
             self._target_locations.append(target_location)
 
         self._targets_visited = np.array([False] * self.targets)
+
+        # Create numpy array containing the Manhattan distance between the agent to each target
         distances = np.linalg.norm(
             self._agent_location - self._target_locations, ord=1, axis=1)
         shortest_distance_index = np.argmin(distances)
+
         self._shortest_distance = distances[shortest_distance_index]
         self._closest_point = self._target_locations[shortest_distance_index]
         self._reward = 0
@@ -103,8 +113,16 @@ class GridWorldCustomEnv(gym.Env):
         return observation
 
     def step(self, action):
+        terminated = False
         # Store current agent state
         current_shortest_distance = self._shortest_distance.copy()
+
+        # If previously reached subgoal, update the shortest distance
+        if current_shortest_distance == 0:
+            distances = np.linalg.norm(
+                self._agent_location - self._target_locations, ord=1, axis=1)
+            shortest_distance_index = np.argmin(distances)
+            self._shortest_distance = distances[shortest_distance_index]
 
         # Map the action (element of {0,1,2,3}) to the direction we walk in
         # TODO: Take note of the type casting here -> may potentially hide errors -> maybe type cast at the main class itself?
@@ -117,25 +135,37 @@ class GridWorldCustomEnv(gym.Env):
             self._agent_location + direction, 0, self.size - 1
         )
 
-        # Check if the agent has visited the next target location
-        for i in range(self.targets):
-            if np.array_equal(self._agent_location, self._target_locations[i]):
-                self._targets_visited[i] = True
-
-        # self._reward = 1 if terminated else 0  # Binary sparse rewards
-        # Update the new shortest distance
+        # Updates shortest distance and closest point
         distances = np.linalg.norm(
             self._agent_location - self._target_locations, ord=1, axis=1)
         shortest_distance_index = np.argmin(distances)
+        # TODO: Check if this is necessary
         self._shortest_distance = distances[shortest_distance_index]
+        # Checks if agent's current location coincides with the target location
+        if np.any(distances == 0):
+            # Color target white if reached
+            for i, target in enumerate(self._entity_locations):
+                if np.array_equal(target, self._agent_location):
+                    self._target_colors[i+self._color_seed] = (
+                        255, 255, 255)
+            # Condition needed to prevent index error on last target
+            if (len(distances) > 1):
+                # Remove the target location from the list of target locations so that you will not include the same subgoal in the next step
+                self._target_locations = np.delete(
+                    self._target_locations, shortest_distance_index, 0)
+                # print("After location removal in self._target_locations: ",
+                #       self._target_locations)
+                # Recalculate the new distance to a new target location after removal
+                distances = np.linalg.norm(
+                    self._agent_location - self._target_locations, ord=1, axis=1)
+                shortest_distance_index = np.argmin(distances)
+                # print("new distances: ", distances)
+                self._shortest_distance = distances[shortest_distance_index]
+            else:
+                # An episode is done iff the agent has reached all targets (When there is only 1 target location and distance from it is 0).
+                terminated = True
         self._closest_point = self._target_locations[shortest_distance_index]
 
-        observation = self._get_obs()
-        info = self._get_info()
-        # An episode is done iff the agent has reached the target. We convert to bool to pass the env_checker test.
-        terminated = bool(np.all(self._targets_visited))
-
-        # TEST FOR 1 TARGET ONLY -> REMOVE LATER
         if terminated:
             """
             Should change accordingly to the size of the map.
@@ -152,6 +182,9 @@ class GridWorldCustomEnv(gym.Env):
             self._reward = 0
         else:
             self._reward = -1  # Penalize for not moving towards the target
+
+        observation = self._get_obs()
+        info = self._get_info()
 
         return observation, self._reward, terminated, info
 
@@ -170,17 +203,17 @@ class GridWorldCustomEnv(gym.Env):
 
         canvas = pygame.Surface((self.window_size, self.window_size))
         canvas.fill((255, 255, 255))
+        # The size of a single grid square in pixels
         pix_square_size = (
             self.window_size / self.size
-        )  # The size of a single grid square in pixels
-
+        )
         # First we draw the targets
-        for i in range(self.targets):
+        for i in range(1, self.targets+1):
             pygame.draw.rect(
                 canvas,
-                self._target_colors[i+70],
+                self._target_colors[i+self._color_seed],
                 pygame.Rect(
-                    pix_square_size * self._target_locations[i],
+                    pix_square_size * self._entity_locations[i],
                     (pix_square_size, pix_square_size),
                 ),
             )
