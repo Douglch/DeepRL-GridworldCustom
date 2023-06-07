@@ -6,9 +6,9 @@ import gridworldcustom
 from utils.logger import logger
 
 # Training parameters
-TIMESTEPS = 10_000
-SIZE = 5
-TARGETS = 3
+TIMESTEPS = 200_000
+SIZE = 10
+TARGETS = 5
 
 model_fn = PPO
 models_dir = f"models/{model_fn.__name__}"

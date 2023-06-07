@@ -4,11 +4,11 @@ from stable_baselines3 import PPO
 import gridworldcustom
 from utils.logger import logger
 
-SIZE = 5
-TARGETS = 3
+SIZE = 10
+TARGETS = 5
 
 # Change the timestep to the model you want to load
-TIMESTEPS = 100_000
+TIMESTEPS = 200_000
 
 # Edit the model_fn to the algorithm you want to use
 model_fn = PPO
