@@ -7,12 +7,12 @@ import gridworldcustom
 from utils.logger import logger
 
 # Training parameters
-TIMESTEPS = 200_000
+TIMESTEPS = 1_000
 SIZE = 10
 TARGETS = 4
 EPISODES = 10
 
-model_fn = PPO
+model_fn = A2C
 models_dir = f"models/{model_fn.__name__}"
 log_dir = "logs"
 
@@ -35,7 +35,7 @@ model = model_fn("MultiInputPolicy", env,
 
 for i in range(1, EPISODES + 1):
     model.learn(total_timesteps=TIMESTEPS, reset_num_timesteps=False,
-                tb_log_name=f"{model_fn.__name__}")
+                tb_log_name=f"{model_fn.__name__}", progress_bar=True)
     # Save the model every TIMESTEPS timesteps
     model.save(f"{models_dir}/{TIMESTEPS*i}")
 

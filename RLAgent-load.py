@@ -8,14 +8,14 @@ import gridworldcustom
 from utils.logger import logger
 
 SIZE = 10
-TARGETS = 1
-SUCCESS_MODEL = "OneTarget10x10"
+TARGETS = 4
+SUCCESS_MODEL = "2Targets5x5"
 
 # Change the timestep to the model you want to load
-TIMESTEPS = SUCCESS_MODEL  # 2_000_000
+TIMESTEPS = 1000  # 2_000_000
 
 # Edit the model_fn to the algorithm you want to use
-model_fn = PPO
+model_fn = A2C
 
 env = gym.make("gridworldcustom/GridWorldCustom-v0",
                render_mode="human", size=SIZE, targets=TARGETS)
@@ -29,7 +29,7 @@ models_dir = f"models/{model_fn.__name__}"
 model_path = f"{models_dir}/{TIMESTEPS}"
 
 model = model_fn.load(model_path, env=env, print_system_info=True)
-
+# print("model policy:", model.policy)
 # mean_reward, std_reward = evaluate_policy(
 #     model, env, n_eval_episodes=50, deterministic=True)
 
@@ -50,7 +50,9 @@ for episode in tqdm(range(1, episodes + 1)):
     while not terminated:
         action, _states = model.predict(obs)
         obs, reward, terminated, info = env.step(action)
-        # distances[f"episode_{episode}"].append(info["shortest distance"])
+        # distances[f"episode_{episode}"].append(info["current distance to nearest location"])
+        print("current distance to nearest location:",
+              info["current distance to nearest location"])
         reward_ep += reward
         if reward < 0:
             mistake = True
@@ -60,13 +62,13 @@ for episode in tqdm(range(1, episodes + 1)):
         env.render()
     if mistake:
         ep_with_mistakes += 1
-    total_rewards.append(reward_ep)
-    total_steps.append(steps)
+    # total_rewards.append(reward_ep)
+    # total_steps.append(steps)
     print(f"Episode: {episode}, Reward_EP: {reward_ep}, Steps: {steps}")
 
 # print("distances:", distances)
-print("total_rewards:", total_rewards)
-print("total_steps:", total_steps)
+# print("total_rewards:", total_rewards)
+# print("total_steps:", total_steps)
 print(f"episodes with mistakes: {ep_with_mistakes} / {episodes}")
 p = 100 * float(ep_with_mistakes) / float(episodes)
 print("success rate:", 100 - p, "%")

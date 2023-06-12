@@ -68,8 +68,10 @@ class GridWorldCustomEnv(gym.Env):
     def _get_info(self):
         # Return the info on the nearest targets
         info = {
-            "shortest distance": self._shortest_distance,
-            "closest target": self._closest_point
+            "current distance to nearest location": self._shortest_distance,
+            "closest target": self._closest_point,
+            "entity locations": self._entity_locations,
+            "agent location": self._agent_location,
         }
         return info
 
@@ -107,7 +109,7 @@ class GridWorldCustomEnv(gym.Env):
 
         self._shortest_distance = distances[shortest_distance_index]
         self._closest_point = self._target_locations[shortest_distance_index]
-        self._reward = 0
+        self._reward = 0.0
         observation = self._get_obs()
         # info = self._get_info()
         return observation
@@ -129,12 +131,14 @@ class GridWorldCustomEnv(gym.Env):
             self._agent_location + direction, 0, self.size - 1
         )
 
-        # Updates shortest distance and closest point
+        # Calculates all shortest distance and closest point
         distances = np.linalg.norm(
             self._agent_location - self._target_locations, ord=1, axis=1)
         shortest_distance_index = np.argmin(distances)
-        # TODO: Check if this is necessary
+
+        # Updates shortest distance if haven't reached the target
         self._shortest_distance = distances[shortest_distance_index]
+
         # Checks if agent's current location coincides with the target location
         if np.any(distances == 0):
             subgoal_reached = True
@@ -153,6 +157,7 @@ class GridWorldCustomEnv(gym.Env):
                 # Recalculate the new distance to a new target location after removal
                 distances = np.linalg.norm(
                     self._agent_location - self._target_locations, ord=1, axis=1)
+                # print("new distances: ", distances)
                 shortest_distance_index = np.argmin(distances)
                 # print("new distances: ", distances)
                 self._shortest_distance = distances[shortest_distance_index]
@@ -160,20 +165,19 @@ class GridWorldCustomEnv(gym.Env):
                 # An episode is done iff the agent has reached all targets (When there is only 1 target location and distance from it is 0).
                 terminated = True
         self._closest_point = self._target_locations[shortest_distance_index]
-
+        # print("self._shortest distance:", self._shortest_distance)
+        # print("current_shortest_distance:", current_shortest_distance)
         if terminated:
             """
             Should change accordingly to the size of the map.
             Think about what should be the expected number of steps to take to terminate the episode.
             """
-            self._reward = self.size
-        elif subgoal_reached or self._shortest_distance < current_shortest_distance:
+            self._reward = 1
+        elif subgoal_reached:  # or self._shortest_distance < current_shortest_distance:
             self._reward = 1  # Reward for moving towards the target
-            if (subgoal_reached):
-                self._reward += self.size - 1
-        elif self._shortest_distance >= current_shortest_distance:
+        else:  # self._shortest_distance >= current_shortest_distance:
             # Penalize for staying in the same place or not moving towards the target
-            self._reward = -1
+            self._reward = -0.01
 
         observation = self._get_obs()
         info = self._get_info()
