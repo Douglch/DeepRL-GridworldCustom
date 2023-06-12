@@ -7,7 +7,7 @@ from .helper import Helper
 
 
 class GridWorldCustomEnv(gym.Env):
-    metadata = {"render_modes": ["human", "rgb_array"], "render_fps": 7}
+    metadata = {"render_modes": ["human", "rgb_array"], "render_fps": 10}
     Helper = Helper()
 
     def __init__(self, render_mode=None, size=5, targets=1):
@@ -114,16 +114,10 @@ class GridWorldCustomEnv(gym.Env):
 
     def step(self, action):
         terminated = False
+        subgoal_reached = False
         # Store current agent state
         current_shortest_distance = self._shortest_distance.copy()
-
-        # If previously reached subgoal, update the shortest distance
-        if current_shortest_distance == 0:
-            distances = np.linalg.norm(
-                self._agent_location - self._target_locations, ord=1, axis=1)
-            shortest_distance_index = np.argmin(distances)
-            self._shortest_distance = distances[shortest_distance_index]
-
+        # print("current_shortest_distance", current_shortest_distance)
         # Map the action (element of {0,1,2,3}) to the direction we walk in
         # TODO: Take note of the type casting here -> may potentially hide errors -> maybe type cast at the main class itself?
         direction = self._action_to_direction[int(action)]
@@ -143,6 +137,7 @@ class GridWorldCustomEnv(gym.Env):
         self._shortest_distance = distances[shortest_distance_index]
         # Checks if agent's current location coincides with the target location
         if np.any(distances == 0):
+            subgoal_reached = True
             # Color target white if reached
             for i, target in enumerate(self._entity_locations):
                 if np.array_equal(target, self._agent_location):
@@ -171,17 +166,14 @@ class GridWorldCustomEnv(gym.Env):
             Should change accordingly to the size of the map.
             Think about what should be the expected number of steps to take to terminate the episode.
             """
-            self._reward = self.size**2
-        elif self._shortest_distance < current_shortest_distance:
+            self._reward = self.size
+        elif subgoal_reached or self._shortest_distance < current_shortest_distance:
             self._reward = 1  # Reward for moving towards the target
-        elif self._shortest_distance == current_shortest_distance:
-            # No reward for staying in the same place
-            """
-            This condition is for disallowing the drone from trying to move out of the boundary to get more reward.
-            """
-            self._reward = 0
-        else:
-            self._reward = -1  # Penalize for not moving towards the target
+            if (subgoal_reached):
+                self._reward += self.size - 1
+        elif self._shortest_distance >= current_shortest_distance:
+            # Penalize for staying in the same place or not moving towards the target
+            self._reward = -1
 
         observation = self._get_obs()
         info = self._get_info()
